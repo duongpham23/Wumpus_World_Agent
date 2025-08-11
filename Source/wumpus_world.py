@@ -95,6 +95,7 @@ def wumpus_move():
             if world[y][x]["wumpus"]:
                 wumpus_pos.append((x, y))
 
+    wumpus_new_pos = []
     for x, y in wumpus_pos:
         # Chọn ngẫu nhiên 1 hướng để đi
         world[y][x]["wumpus"] = False
@@ -103,6 +104,10 @@ def wumpus_move():
         new_y = y + direction[1]
         if (new_x, new_y) != (0, 0) and in_bounds(new_x, new_y) and not world[new_y][new_x]["pit"] and not world[new_y][new_x]["wumpus"]:
             world[new_y][new_x]["wumpus"] = True
+            wumpus_new_pos.append((new_x, new_y))
         else:
             # Nếu không di chuyển được, giữ nguyên vị trí cũ
             world[y][x]["wumpus"] = True
+            wumpus_new_pos.append((x, y))
+            
+    return wumpus_new_pos

@@ -23,7 +23,7 @@ ORANGE = (255, 165, 0)  # Uncertain cells
 GREEN = (0, 255, 0)  # Safe color
 
 # ===== BỔ SUNG: Pygame draw với inference visualization =====
-def draw_world_with_inference(screen, world, agent_x, agent_y, font):
+def draw_world_with_inference(screen, world, agent_x, agent_y, font, direction):
     screen.fill(BLACK)
     for y in range(N):
         for x in range(N):
@@ -31,14 +31,14 @@ def draw_world_with_inference(screen, world, agent_x, agent_y, font):
             cell = world[y][x]
             
             # Chọn màu dựa trên trạng thái inference
-            if cell["visited"]:
-                color = DARK_GRAY
-            elif cell["safe"]:
+            if cell["safe"]:
                 color = GREEN
             elif cell["dangerous"]:
                 color = RED
             elif cell["uncertain"]:
                 color = ORANGE
+            elif cell["visited"]:
+                color = DARK_GRAY
             else:
                 color = GRAY
                 
@@ -47,9 +47,16 @@ def draw_world_with_inference(screen, world, agent_x, agent_y, font):
 
             # Vẽ agent
             if (x, y) == (agent_x, agent_y):
-                text = font.render("A", True, GREEN)
+                if direction == 'N':
+                    text = font.render("up", True, PURPLE)
+                elif direction == 'S':
+                    text = font.render("down", True, PURPLE)
+                elif direction == 'E':
+                    text = font.render("right", True, PURPLE)
+                elif direction == 'W':
+                    text = font.render("left", True, PURPLE)
                 screen.blit(text, (rect.x + 15, rect.y + 10))
-            
+
             # Vẽ features thực tế (chỉ cho debug - thường ẩn)
             elif cell["glitter"] and cell["wumpus"]:
                 text = font.render("W, G", True, YELLOW)
@@ -94,6 +101,8 @@ def simulate_agent(world):
     direction = 'E'  # Bắt đầu hướng Đông
     cnt = 0
     collect_gold = False
+    next_goal = None
+    wumpus_pos = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -106,7 +115,7 @@ def simulate_agent(world):
         percept = {
             "breeze": world[y][x]["breeze"],
             "stench": world[y][x]["stench"],
-            "glitter": False
+            "glitter": world[y][x]["glitter"]
         }
         
         # Cập nhật KB
@@ -119,43 +128,52 @@ def simulate_agent(world):
         inference.print_KB_with_inference(KB, x, y, percept)
 
         # Vẽ world với inference visualization
-        draw_world_with_inference(screen, world, x, y, font)
+        draw_world_with_inference(screen, world, x, y, font, direction)
+
+        # Kiểm tra agent có bị wumpus ăn không
+        if (x, y) in wumpus_pos:
+            print("🚨 Agent eaten by Wumpus! Game Over.")
+            break
+
         pygame.display.flip()
         time.sleep(DELAY)
 
         if path != []:
             next_step = path.pop(0)
 
-            next_x = next_step[0][0]
-            next_y = next_step[0][1]
+            # Cập nhật vị trí
+            x = next_step[0][0]
+            y = next_step[0][1]
             direction = next_step[1]
 
-            # Nếu nước đi tiếp theo vào ô nguy hiểm
-            if world[next_y][next_x]["dangerous"]:
-                path = []  # Reset path nếu gặp wumpus
-                continue  # Bỏ qua nếu gặp wumpus hoặc ô dangerous
-
-            # Cập nhật vị trí
-            x, y = next_x, next_y
+            # Nếu thấy rủi ro, cụ thể là thấy stench
+            if world[y][x]["stench"]:
+                print("🚨 Danger! Stench detected.")
+                path = []  # Reset path nếu thấy stench
+                continue  # Bỏ qua nếu thấy stench
 
             if world[y][x]["glitter"]:
                 collect_gold = True
+                print("💰 Collected gold! Climbing out of the dungeon...")
                 path = solver.a_star(state.State((x, y), direction), state.State((0, 0)))
                 world[y][x]["glitter"] = False
 
             # advance
             cnt += 1
             if cnt % 5 == 0:
-                wumpus_world.wumpus_move()
+                wumpus_pos = wumpus_world.wumpus_move()
                 wumpus_world.place_feature("wumpus", NUM_WUMPUS, True)
         else:
-            if collect_gold:
-                break
+            if (x, y) == (0, 0):
+                if collect_gold:
+                    print("Climbing out of the dungeon with gold!")
+                    break
+                elif next_goal is not None and next_goal == (0, 0):
+                    print("Climbing out of the dungeon!")
+                    break
 
             next_goal = solver.choose_next_goal(state.State((x, y), direction), world)
             path = solver.a_star(state.State((x, y), direction), state.State(next_goal))
-            # if not path:
-            #     running = False
 
     print("Simulation ended.")
     time.sleep(3)  # Chờ trước khi đóng

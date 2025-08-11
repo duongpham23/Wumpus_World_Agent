@@ -16,7 +16,7 @@ def a_star(start: state.State, goal: state.State):
 
         if current.pos == goal.pos:
             path = []
-            while current.pos != start.pos: # co the loi
+            while current != start:
                 path.append((current.pos, current.direction))
                 current = current.parent
             path.reverse()
@@ -34,13 +34,6 @@ def a_star(start: state.State, goal: state.State):
             # Nếu chưa có trong frontier hoặc có f(n) nhỏ hơn
             if child not in frontier_cost or child.f() < frontier_cost[child]:
                 frontier_cost[child] = child.f()
-                if child.status == 'safe':
-                    priority = 0
-                elif child.status == 'uncertain':
-                    priority = 1
-                else:
-                    continue
-
                 heapq.heappush(frontier, child)
 
     return []

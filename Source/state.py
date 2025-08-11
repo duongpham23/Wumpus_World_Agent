@@ -64,6 +64,14 @@ class State:
             turn_cost = 1
         elif (self.direction == 'N' or self.direction == 'S') and (direction_to_goal == 'E' or direction_to_goal == 'W'):
             turn_cost = 1
+        elif self.direction == 'N' and (direction_to_goal == 'SE' or direction_to_goal == 'SW'):
+            turn_cost = 1
+        elif self.direction == 'S' and (direction_to_goal == 'NE' or direction_to_goal == 'NW'):
+            turn_cost = 1
+        elif self.direction == 'E' and (direction_to_goal == 'SW' or direction_to_goal == 'NW'):
+            turn_cost = 1
+        elif self.direction == 'W' and (direction_to_goal == 'SE' or direction_to_goal == 'NE'):
+            turn_cost = 1
         # Nếu cần quay 180 độ
         elif (self.direction == 'N' and direction_to_goal == 'S') or (self.direction == 'S' and direction_to_goal == 'N'):
             turn_cost = 2
@@ -104,15 +112,16 @@ class State:
                 new_state = State(new_pos, self.direction, "uncertain", self.cost + 1, 0, self)
                 children.append(new_state)
 
+        new_direction = self.direction
         # Quay trái
         if self.direction == 'N': # Bắc
             new_direction = 'W' # Tây
+        elif self.direction == 'W': # Tây
+            new_direction = 'S' # Nam
         elif self.direction == 'S': # Nam
             new_direction = 'E' # Đông
         elif self.direction == 'E': # Đông
             new_direction = 'N' # Bắc
-        elif self.direction == 'W': # Tây
-            new_direction = 'S' # Nam
 
         new_state = State(self.pos, new_direction, "safe", self.cost + 1, 0, self)
         children.append(new_state)
@@ -120,10 +129,10 @@ class State:
         # Quay phải
         if self.direction == 'N': # Bắc
             new_direction = 'E' # Đông
-        elif self.direction == 'S': # Nam
-            new_direction = 'W' # Tây
         elif self.direction == 'E': # Đông
             new_direction = 'S' # Nam
+        elif self.direction == 'S': # Nam
+            new_direction = 'W' # Tây
         elif self.direction == 'W': # Tây
             new_direction = 'N' # Bắc
 
