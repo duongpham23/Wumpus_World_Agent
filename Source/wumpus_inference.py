@@ -1,47 +1,14 @@
-import random
 import time
 import os
-import pygame
 import sys
+import wumpus_world
 sys.stdout.reconfigure(encoding='utf-8')
 
 # ===== Constants =====
-N = 5
-NUM_WUMPUS = 2
-NUM_PITS = 2
-DELAY = 1  # Delay giữa các bước
-
-# Pygame constants
-CELL_SIZE = 60
-SCREEN_WIDTH = N * CELL_SIZE
-SCREEN_HEIGHT = N * CELL_SIZE
-BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
-DARK_GRAY = (100, 100, 100)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
-PURPLE = (128, 0, 128)
-YELLOW = (255, 255, 0)  # Uncertain cells
-ORANGE = (255, 165, 0)  # Safe cells
+N = wumpus_world.N
 
 # ===== KB =====
 KB = set()  # Knowledge Base
-
-# ===== World init =====
-world = [[{
-    "pit": False,
-    "wumpus": False,
-    "breeze": False,
-    "stench": False,
-    "visited": False,
-    "safe": False,      # Inference result
-    "dangerous": False, # Inference result
-    "uncertain": True   # Inference result (default)
-} for _ in range(N)] for _ in range(N)]
-
-def in_bounds(x, y):
-    return 0 <= x < N and 0 <= y < N
 
 # ===== BỔ SUNG: INFERENCE ENGINE =====
 class InferenceEngine:
@@ -261,54 +228,28 @@ class InferenceEngine:
         else:
             return 'uncertain'
 
-# Tạo inference engine instance
-inference_engine = InferenceEngine(N)
-
-# ===== BỔ SUNG: CẬP NHẬT WORLD VỚI INFERENCE =====
-def update_world_with_inference(world, KB):
-    """
-    Cập nhật trạng thái inference cho tất cả các cells chưa được thăm
-    """
-    for y in range(N):
-        for x in range(N):
-            if not world[y][x]["visited"]:
-                status = inference_engine.infer_cell_status(x, y, KB)
-                
-                # Reset trạng thái cũ
-                world[y][x]["safe"] = False
-                world[y][x]["dangerous"] = False
-                world[y][x]["uncertain"] = False
-                
-                # Set trạng thái mới
-                if status == 'safe':
-                    world[y][x]["safe"] = True
-                elif status == 'dangerous':
-                    world[y][x]["dangerous"] = True
-                else:
-                    world[y][x]["uncertain"] = True
-
 # ===== KB update =====
 def update_KB(x, y, percept, KB, N):
     adj = [(x-1,y), (x+1,y), (x,y-1), (x,y+1)]
 
     if percept["breeze"]:
         KB.add(f"Breeze({x},{y})")
-        pits = " OR ".join([f"Pit({i},{j})" for i,j in adj if in_bounds(i,j)])
+        pits = " OR ".join([f"Pit({i},{j})" for i,j in adj if wumpus_world.in_bounds(i,j)])
         KB.add(f"Breeze({x},{y}) <-> {pits}")
     else:
         KB.add(f"!Breeze({x},{y})")
         for i,j in adj:
-            if in_bounds(i,j):
+            if wumpus_world.in_bounds(i,j):
                 KB.add(f"!Pit({i},{j})")
 
     if percept["stench"]:
         KB.add(f"Stench({x},{y})")
-        wumpuses = " OR ".join([f"Wumpus({i},{j})" for i,j in adj if in_bounds(i,j)])
+        wumpuses = " OR ".join([f"Wumpus({i},{j})" for i,j in adj if wumpus_world.in_bounds(i,j)])
         KB.add(f"Stench({x},{y}) <-> {wumpuses}")
     else:
         KB.add(f"!Stench({x},{y})")
         for i,j in adj:
-            if in_bounds(i,j):
+            if wumpus_world.in_bounds(i,j):
                 KB.add(f"!Wumpus({i},{j})")
 
     if percept["glitter"]:
@@ -326,6 +267,7 @@ def print_KB_with_inference(KB, x, y, percept):
         print("  ", clause)
     print("-" * 60)
     
+    world = wumpus_world.world
     # In kết quả inference
     print("🧠 Inference Results:")
     for row in range(N-1, -1, -1):  # In từ trên xuống
@@ -345,135 +287,3 @@ def print_KB_with_inference(KB, x, y, percept):
         print(line)
     print("Legend: [V]=Visited, [S]=Safe, [D]=Dangerous, [?]=Uncertain")
     print("-" * 60)
-
-# ===== World setup =====
-def place_feature(key, count):
-    placed = 0
-    while placed < count:
-        x = random.randint(0, N - 1)
-        y = random.randint(0, N - 1)
-        if (x, y) == (0, 0):
-            continue
-        if not world[y][x]["wumpus"] and not world[y][x]["pit"]:
-            world[y][x][key] = True
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                nx, ny = x + dx, y + dy
-                if in_bounds(nx, ny):
-                    if key == "pit":
-                        world[ny][nx]["breeze"] = True
-                    elif key == "wumpus":
-                        world[ny][nx]["stench"] = True
-            placed += 1
-
-# ===== BỔ SUNG: Pygame draw với inference visualization =====
-def draw_world_with_inference(screen, world, agent_x, agent_y, font):
-    screen.fill(BLACK)
-    for y in range(N):
-        for x in range(N):
-            rect = pygame.Rect(x * CELL_SIZE, (N - 1 - y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-            cell = world[y][x]
-            
-            # Chọn màu dựa trên trạng thái inference
-            if cell["visited"]:
-                color = DARK_GRAY
-            elif cell["safe"]:
-                color = ORANGE  # Màu cam cho safe cells
-            elif cell["dangerous"]:
-                color = RED
-            elif cell["uncertain"]:
-                color = YELLOW
-            else:
-                color = GRAY
-                
-            pygame.draw.rect(screen, color, rect)
-            pygame.draw.rect(screen, BLACK, rect, 1)
-
-            # Vẽ agent
-            if (x, y) == (agent_x, agent_y):
-                text = font.render("A", True, GREEN)
-                screen.blit(text, (rect.x + 15, rect.y + 10))
-            
-            # Vẽ features thực tế (chỉ cho debug - thường ẩn)
-            elif cell["wumpus"]:
-                text = font.render("W", True, RED)
-                screen.blit(text, (rect.x + 15, rect.y + 10))
-            elif cell["pit"]:
-                text = font.render("P", True, BLACK)
-                screen.blit(text, (rect.x + 15, rect.y + 10))
-            
-            # Vẽ percepts
-            percept_texts = []
-            if cell["breeze"]:
-                percept_texts.append(("B", BLUE))
-            if cell["stench"]:
-                percept_texts.append(("S", PURPLE))
-            
-            # Hiển thị percepts
-            for i, (symbol, color) in enumerate(percept_texts):
-                x_offset = 5 + (i % 2) * 30
-                y_offset = 35
-                text = pygame.font.Font(None, 20).render(symbol, True, color)
-                screen.blit(text, (rect.x + x_offset, rect.y + y_offset))
-
-# ===== Simulation =====
-def simulate_agent(world):
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Wumpus World with Inference Engine")
-    font = pygame.font.Font(None, 36)
-
-    x, y = 0, 0
-    running = True
-    for row in range(N):
-        for col in range(N):
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-            if not running: break
-
-            world[y][x]["visited"] = True
-            percept = {
-                "breeze": world[y][x]["breeze"],
-                "stench": world[y][x]["stench"],
-                "glitter": False
-            }
-            
-            # Cập nhật KB
-            update_KB(x, y, percept, KB, N)
-            
-            # BỔ SUNG: Chạy inference engine
-            update_world_with_inference(world, KB)
-            
-            # In thông tin
-            print_KB_with_inference(KB, x, y, percept)
-
-            # Vẽ world với inference visualization
-            draw_world_with_inference(screen, world, x, y, font)
-            pygame.display.flip()
-            time.sleep(DELAY)
-
-            if row % 2 == 0:
-                if x < N - 1:
-                    x += 1
-                else:
-                    y += 1
-            else:
-                if x > 0:
-                    x -= 1
-                else:
-                    y += 1
-            if y >= N:
-                running = False
-
-    time.sleep(3)  # Chờ trước khi đóng
-    pygame.quit()
-
-# ===== Main =====
-if __name__ == "__main__":
-    print("🎮 Initializing Wumpus World with Inference Engine...")
-    place_feature("wumpus", NUM_WUMPUS)
-    place_feature("pit", NUM_PITS)
-    print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {NUM_PITS} Pits")
-    print("🚀 Starting simulation...")
-    simulate_agent(world)
