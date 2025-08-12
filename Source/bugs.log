@@ -1,1 +1,6 @@
-- Đạp lên wumpus. Đây là tính năng, là do trên đường đi tới 1 ô an toàn không có 1 ô an toàn nào cả. Nói cách khác là agent đang đi trên ô uncertain.
+- Đạp lên stench vẫn xanh.
+- Vẫn đạp lên con wumpus.
+- Khi wumpus chủ động lại gần, không có phản ứng gì.
+- Đứng ở stench, quay mấy vòng vẫn không đánh dấu nguy hiểm
+- Tìm được ô safe mới, wumpus đi vào đó, agent vẫn cố chấp đi vào
+- Bắn mũi tên nhưng vẫn chưa cập nhật ô đó là an toàn

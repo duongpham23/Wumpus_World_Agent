@@ -47,7 +47,7 @@ def choose_next_goal(current_state: state.State, world):
                 safe_cells.append((x, y))
 
     if not safe_cells:
-        print("No safe cells left to explore!")
+        print("No safe cells left to explore! Go back to (0, 0)")
         return (0, 0) # Trả về ô (0, 0) nếu không còn ô an toàn
 
     # Chọn ô mục tiêu gần nhất
@@ -59,4 +59,5 @@ def choose_next_goal(current_state: state.State, world):
             min_cost = cost
             goal = cell
 
+    print("Found new safe cell:", goal)
     return goal

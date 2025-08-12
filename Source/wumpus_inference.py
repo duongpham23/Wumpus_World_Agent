@@ -329,6 +329,8 @@ def update_KB_after_shot(agent: Agent.Agent, KB, N):
         dx = -1
 
     x, y = agent.pos
+    x += dx
+    y += dy
     while 0 <= x < N and 0 <= y < N:
         KB.add(f"!Wumpus({x},{y})")
         x += dx

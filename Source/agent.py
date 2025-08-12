@@ -9,6 +9,8 @@ class Agent:
         self.pos = pos # (x, y)
         self.direction = direction
         self.num_arrow = num_arrow
+        self.score = 0
+        self.gold_collected = False
 
     def move_forward(self):
         new_x, new_y = self.pos
@@ -21,6 +23,7 @@ class Agent:
         elif self.direction == 'W':
             new_x -= 1
         self.pos = (new_x, new_y)
+        self.score -= 1
 
     def turn_left(self):
         if self.direction == 'N': # Bắc
@@ -31,6 +34,7 @@ class Agent:
             self.direction = 'E' # Đông
         elif self.direction == 'E': # Đông
             self.direction = 'N' # Bắc
+        self.score -= 1
 
     def turn_right(self):
         if self.direction == 'N': # Bắc
@@ -41,6 +45,7 @@ class Agent:
             self.direction = 'W' # Tây
         elif self.direction == 'W': # Tây
             self.direction = 'N' # Bắc
+        self.score -= 1
 
     def grab_gold(self):
         x, y = self.pos
@@ -48,19 +53,22 @@ class Agent:
             cell = world[y][x]
             if cell["glitter"]:
                 cell["glitter"] = False
-                return True
-        return False
+                self.score += 100
+                self.gold_collected = True
     
     def climb_out(self):
         x, y = self.pos
         if (x, y) == (0, 0):
-            return True
-        return False
+            if self.gold_collected:
+                self.score += 1000
 
     def shoot_arrow(self):
         x, y = self.pos
         self.num_arrow -= 1
-        
+        self.score -= 10
+
+        print("💥 Shot arrow in direction:", self.direction)
+
         if self.direction == 'N':
             for i in range(y, N):
                 if world[i][x]["wumpus"]:
@@ -89,6 +97,7 @@ class Agent:
                     world[y][i]["wumpus"] = False
                     wumpus_world.wumpus_update_stench()
                     return True
+        print("❌ No Wumpus hit")
         return False
 
     def facing_to_wall(self):
@@ -106,6 +115,17 @@ class Agent:
     def update(self, pos, direction):
         self.pos = pos
         self.direction = direction
+        self.score -= 1
+
+        x, y = self.pos
+        if world[y][x]["uncertain"]:
+            print("❗️ Come to an uncertain cell:", (x, y))
+        else:
+            print("✅ Come to a safe cell:", (x, y))
+
 
     def clone(self):
-        return Agent(self.pos, self.direction)
+        new_agent = Agent(self.pos, self.direction, self.num_arrow)
+        new_agent.score = self.score
+        new_agent.gold_collected = self.gold_collected
+        return new_agent
