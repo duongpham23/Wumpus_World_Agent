@@ -1,6 +1,6 @@
 # ===== Constants =====
 N = 8
-NUM_WUMPUS = 2
+NUM_WUMPUS = 8
 NUM_PITS = 2
 # ===== World init =====
 world = [[{
@@ -19,53 +19,41 @@ def in_bounds(x, y):
     return 0 <= x < N and 0 <= y < N
 
 # ===== BỔ SUNG: CẬP NHẬT WORLD VỚI INFERENCE =====
+# ===== FIXED: CẬP NHẬT WORLD VỚI INFERENCE =====
 def update_world_with_inference(world, KB):
     # Tạo inference engine instance
     import wumpus_inference as inference
     inference_engine = inference.InferenceEngine(N)
-    """
-    Cập nhật trạng thái inference cho tất cả các cells chưa được thăm
-    """
+    """Cập nhật trạng thái inference cho tất cả các cells chưa được thăm"""
+    debug_info = {}
+
     for y in range(N):
         for x in range(N):
             if not world[y][x]["visited"]:
-                status = inference_engine.infer_cell_status(x, y, KB)
+                status, inferences = inference_engine.infer_cell_status(x, y, KB)
+                debug_info[(x,y)] = (status, inferences)
                 
+
                 # Reset trạng thái cũ
                 world[y][x]["safe"] = False
                 world[y][x]["dangerous"] = False
                 world[y][x]["uncertain"] = False
                 
                 # Set trạng thái mới
-                world[0][0]["safe"] = True
                 if status == 'safe':
                     world[y][x]["safe"] = True
                 elif status == 'dangerous':
                     world[y][x]["dangerous"] = True
                 else:
                     world[y][x]["uncertain"] = True
+    
+    world[0][0]["safe"] = True
+
+    return debug_info
 
 import random
 # ===== World setup =====
-def place_feature(key, count, ingame=False):
-    
-    #Xoa mui wumpus cu
-    if ingame and key == "wumpus":
-        for x in range(N):
-            for y in range(N):
-                if world[y][x]["stench"]:
-                    world[y][x]["stench"] = False
-
-        #Cap nhap mui wumpus moi
-        for x in range(N):
-            for y in range(N):
-                if world[y][x]["wumpus"]:
-                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                        nx, ny = x + dx, y + dy
-                        if in_bounds(nx, ny):
-                            world[ny][nx]["stench"] = True
-        return
-
+def place_feature(key, count):
     placed = 0
     while placed < count:
         x = random.randint(0, N - 1)
@@ -73,6 +61,9 @@ def place_feature(key, count, ingame=False):
         if (x, y) == (0, 0):
             continue
         if not world[y][x]["wumpus"] and not world[y][x]["pit"]:
+            if key == "glitter":
+                world[y][x]["glitter"] = True
+                break
             world[y][x][key] = True
             if (key != "glitter"):
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
@@ -83,6 +74,25 @@ def place_feature(key, count, ingame=False):
                         elif key == "wumpus":
                             world[ny][nx]["stench"] = True
             placed += 1
+
+def wumpus_update_stench():
+    """
+    Update Wumpus state
+    """
+    # Xoá stench cũ
+    for y in range(N):
+        for x in range(N):
+            if world[y][x]["stench"]:
+                world[y][x]["stench"] = False
+
+    # Update stench mới
+    for y in range(N):
+        for x in range(N):
+            if world[y][x]["wumpus"]:
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nx, ny = x + dx, y + dy
+                    if in_bounds(nx, ny):
+                        world[ny][nx]["stench"] = True
 
 def wumpus_move():
     """
@@ -109,5 +119,5 @@ def wumpus_move():
             # Nếu không di chuyển được, giữ nguyên vị trí cũ
             world[y][x]["wumpus"] = True
             wumpus_new_pos.append((x, y))
-            
-    return wumpus_new_pos
+
+    wumpus_update_stench()

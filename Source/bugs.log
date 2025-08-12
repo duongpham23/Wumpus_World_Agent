@@ -1,2 +1,1 @@
-- Ô có wumpus vẫn được đánh dấu là safe
-- Console in ra bị wumpus ăn mà vẫn chưa hiện thị agent bị ăn trên đồ hoạ
+- Đạp lên wumpus. Đây là tính năng, là do trên đường đi tới 1 ô an toàn không có 1 ô an toàn nào cả. Nói cách khác là agent đang đi trên ô uncertain.

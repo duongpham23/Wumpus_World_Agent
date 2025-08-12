@@ -1,8 +1,8 @@
 import state
 import heapq
 
-def a_star(start: state.State, goal: state.State):
-    if start.pos == goal.pos:
+def a_star(start: state.State, goal: tuple):
+    if start.agent.pos == goal:
         return []
 
     priority = 0
@@ -14,10 +14,10 @@ def a_star(start: state.State, goal: state.State):
     while frontier != []:
         current = heapq.heappop(frontier)
 
-        if current.pos == goal.pos:
+        if current.agent.pos == goal:
             path = []
             while current != start:
-                path.append((current.pos, current.direction))
+                path.append((current.agent.pos, current.agent.direction))
                 current = current.parent
             path.reverse()
             return path
@@ -29,7 +29,7 @@ def a_star(start: state.State, goal: state.State):
             if child in expanded:
                 continue
 
-            child.calc_heuristic(goal.pos)
+            child.calc_heuristic(goal)
 
             # Nếu chưa có trong frontier hoặc có f(n) nhỏ hơn
             if child not in frontier_cost or child.f() < frontier_cost[child]:

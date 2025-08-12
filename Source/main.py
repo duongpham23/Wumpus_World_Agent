@@ -14,4 +14,4 @@ if __name__ == "__main__":
     wumpus_world.place_feature("glitter", 1)
     print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {NUM_PITS} Pits")
     print("🚀 Starting simulation...")
-    graphics.simulate_agent(world)
+    graphics.simulate_agent(world, True)
