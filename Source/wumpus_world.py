@@ -20,7 +20,7 @@ def in_bounds(x, y):
 
 # ===== BỔ SUNG: CẬP NHẬT WORLD VỚI INFERENCE =====
 # ===== FIXED: CẬP NHẬT WORLD VỚI INFERENCE =====
-def update_world_with_inference(world, KB):
+def update_world_with_inference(world, KB, prev_pos, curr_pos, advance_mode=False):
     # Tạo inference engine instance
     import wumpus_inference as inference
     inference_engine = inference.InferenceEngine(N)
@@ -29,23 +29,42 @@ def update_world_with_inference(world, KB):
 
     for y in range(N):
         for x in range(N):
-            if not world[y][x]["visited"]:
-                status, inferences = inference_engine.infer_cell_status(x, y, KB)
-                debug_info[(x,y)] = (status, inferences)
-                
+            if not advance_mode:
+                if not world[y][x]["visited"]:
+                    status, inferences = inference_engine.infer_cell_status(x, y, KB)
+                    debug_info[(x,y)] = (status, inferences)
+                    
 
-                # Reset trạng thái cũ
-                world[y][x]["safe"] = False
-                world[y][x]["dangerous"] = False
-                world[y][x]["uncertain"] = False
-                
-                # Set trạng thái mới
-                if status == 'safe':
-                    world[y][x]["safe"] = True
-                elif status == 'dangerous':
-                    world[y][x]["dangerous"] = True
-                else:
-                    world[y][x]["uncertain"] = True
+                    # Reset trạng thái cũ
+                    world[y][x]["safe"] = False
+                    world[y][x]["dangerous"] = False
+                    world[y][x]["uncertain"] = False
+                    
+                    # Set trạng thái mới
+                    if status == 'safe':
+                        world[y][x]["safe"] = True
+                    elif status == 'dangerous':
+                        world[y][x]["dangerous"] = True
+                    else:
+                        world[y][x]["uncertain"] = True
+            else:
+                if (x, y) != prev_pos and (x, y) != curr_pos:
+                    status, inferences = inference_engine.infer_cell_status(x, y, KB)
+                    debug_info[(x,y)] = (status, inferences)
+                    
+                    # Reset trạng thái cũ
+                    world[y][x]["safe"] = False
+                    world[y][x]["dangerous"] = False
+                    world[y][x]["uncertain"] = False
+                    
+                    # Set trạng thái mới
+                    if status == 'safe':
+                        world[y][x]["safe"] = True
+                    elif status == 'dangerous':
+                        world[y][x]["dangerous"] = True
+                    else:
+                        world[y][x]["uncertain"] = True                
+            
     
     world[0][0]["safe"] = True
 

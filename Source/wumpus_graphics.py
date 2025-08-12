@@ -160,6 +160,7 @@ def simulate_agent(world, advance_mode=False):
     score_gold = 100
     score = 0
     steps = 0
+    prev_pos = (0, 0)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -197,10 +198,10 @@ def simulate_agent(world, advance_mode=False):
         inference.update_KB(x, y, percept, KB, N)
         
         # Chạy inference
-        debug_info = wumpus_world.update_world_with_inference(world, KB)
-        
+        debug_info = wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
+
         # In thông tin với debug
-        # inference.print_KB_with_inference(KB, x, y, percept, debug_info)
+        inference.print_KB_with_inference(KB, x, y, percept, debug_info)
 
         # Vẽ world với inference visualization
         draw_world_with_inference(screen, world, x, y, font, direction, shoot)
@@ -286,10 +287,10 @@ def simulate_agent(world, advance_mode=False):
                 # Cập nhật KB
                 inference.update_KB(x, y, percept, KB, N)
 
-                inference.update_KB_after_shot(agent, KB, N)
+                # inference.update_KB_after_shot(agent, KB, N)
                 
                 # BỔ SUNG: Chạy inference engine
-                wumpus_world.update_world_with_inference(world, KB)
+                wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
 
                 next_goal = solver.choose_next_goal(state.State(agent), world)
                 path = solver.a_star(state.State(agent), next_goal)
@@ -301,8 +302,15 @@ def simulate_agent(world, advance_mode=False):
             world[y][x]["glitter"] = False
         else:
             # Cập nhật trạng thái
-            x = next_step[0][0]
-            y = next_step[0][1]
+            new_x = next_step[0][0]
+            new_y = next_step[0][1]
+
+            if (new_x, new_y) != (x, y):
+                prev_pos = (x, y)
+
+            x = new_x
+            y = new_y
+
             direction = next_step[1]
             agent.update((x, y), direction)
 

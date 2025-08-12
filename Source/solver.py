@@ -41,19 +41,27 @@ def a_star(start: state.State, goal: tuple):
 def choose_next_goal(current_state: state.State, world):
     # Tìm ô mục tiêu tiếp theo dựa trên trạng thái hiện tại và thế giới
     safe_cells = []
+    safe_visited = []
     for y in range(len(world)):
         for x in range(len(world[y])):
-            if world[y][x]["safe"] and not world[y][x]["visited"]:
-                safe_cells.append((x, y))
+            if (x, y) == current_state.agent.pos:
+                continue
+            
+            if world[y][x]["safe"]:
+                if world[y][x]["visited"]:
+                    safe_visited.append((x, y))
+                else:
+                    safe_cells.append((x, y))
 
+    list_goal = safe_cells
     if not safe_cells:
-        print("No safe cells left to explore! Go back to (0, 0)")
-        return (0, 0) # Trả về ô (0, 0) nếu không còn ô an toàn
+        print("No safe cells left to explore! Go back to known safe cell.")
+        list_goal = safe_visited
 
     # Chọn ô mục tiêu gần nhất
     min_cost = float('inf')
     goal = (0, 0)
-    for cell in safe_cells:
+    for cell in list_goal:
         cost = current_state.calc_heuristic(cell)
         if cost < min_cost:
             min_cost = cost

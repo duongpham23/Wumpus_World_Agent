@@ -279,14 +279,14 @@ def remove_old_stench_from_KB(KB):
     """
     # Xoá các facts về Stench và Wumpus cũ
     for clause in list(KB):
-        if "Stench" in clause or "Wumpus" in clause:
+        if "Stench" in clause:
             KB.remove(clause)
 
 # ===== FIXED: KB update =====
 def update_KB(x, y, percept, KB, N):
     """Cập nhật KB với percepts mới"""
     # Thêm visited fact
-    KB.add(f"Visited({x},{y})")
+    # KB.add(f"Visited({x},{y})")
     
     # Xử lý Breeze
     if percept["breeze"]:
@@ -338,23 +338,28 @@ def update_KB_after_shot(agent: Agent.Agent, KB, N):
 
 # ===== ENHANCED: IN KB VÀ INFERENCE RESULTS =====
 def print_KB_with_inference(KB, x, y, percept, debug_info):
-    os.system('cls' if os.name == 'nt' else 'clear')
+    # os.system('cls' if os.name == 'nt' else 'clear')
     print(f"🤖 Agent at ({x}, {y}) | Percepts: {percept}")
-    print("\n📚 Knowledge Base (simplified):")
+    # print("\n📚 Knowledge Base (simplified):")
     
-    # Chỉ in các facts quan trọng
-    simple_facts = [clause for clause in KB if '<->' not in clause and 'OR' not in clause]
-    for clause in sorted(simple_facts):
+    # # Chỉ in các facts quan trọng
+    # simple_facts = [clause for clause in KB if '<->' not in clause and 'OR' not in clause]
+    # for clause in sorted(simple_facts):
+    #     print("  ", clause)
+
+    print("📚 Knowledge Base:")
+    for clause in sorted(KB):
         print("  ", clause)
+    print("-" * 60)
     
     print("\n🧠 Inference Results:")
     for row in range(N-1, -1, -1):
         line = f"Row {row}: "
         for col in range(N):
             cell = world[row][col]
-            if cell["visited"]:
-                line += "[V] "
-            elif cell["safe"]:
+            # if cell["visited"]:
+            #     line += "[V] "
+            if cell["safe"]:
                 line += "[S] "
             elif cell["dangerous"]: 
                 line += "[D] "
