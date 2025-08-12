@@ -125,6 +125,17 @@ def simulate_agent(world, advance_mode=False):
             # Xoá hết ký ức về stench
             if advance_mode:
                 inference.remove_old_stench_from_KB(KB)
+
+                percept = {
+                    "breeze": world[y][x]["breeze"],
+                    "stench": world[y][x]["stench"],
+                    "glitter": world[y][x]["glitter"]
+                }
+                inference.update_KB(x, y, percept, KB, N)
+                debug_info = wumpus_world.update_world_with_inference(world, KB)
+
+                next_goal = solver.choose_next_goal(state.State(agent), world)
+                path = solver.a_star(state.State(agent), next_goal)
             if not shoot and agent.num_arrow > 0:
                 # Đập mặt vô tường thì không bắn
                 if not agent.facing_to_wall():
@@ -168,16 +179,8 @@ def simulate_agent(world, advance_mode=False):
                 if next_goal != (0, 0):
                     path = solver.a_star(state.State(agent), next_goal)
                 elif (x, y) == (0, 0):
-                    # Nếu có con wumpus chặn đường, ná nó luôn
-                    if world[y][x]["stench"]:
-                        agent.turn_left()
-                        if agent.facing_to_wall():
-                            agent.turn_left()
-                            agent.turn_left()
-                        path.insert(0, ((x, y), agent.direction))
-                    else:
-                        print("Climbing out of the dungeon!")
-                        break
+                    print("Climbing out of the dungeon!")
+                    break
 
         if path != []:
             time.sleep(DELAY)
@@ -190,7 +193,6 @@ def simulate_agent(world, advance_mode=False):
             # Action
             # Chỉ thực hiện 1 trong 3 action sau:
             if shoot:
-                # For advance
                 if agent.shoot_arrow():
                     percept = {
                         "breeze": world[y][x]["breeze"],

@@ -1,6 +1,6 @@
 # ===== Constants =====
 N = 8
-NUM_WUMPUS = 8
+NUM_WUMPUS = 2
 NUM_PITS = 2
 # ===== World init =====
 world = [[{
