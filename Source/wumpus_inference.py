@@ -317,24 +317,11 @@ def update_KB(x, y, percept, KB, N):
         KB.add(f"Gold({x},{y})")
 
 def update_KB_after_shot(agent: Agent.Agent, KB, N):
-    dx, dy = 0, 0
-    direction = agent.direction
-    if direction == 'N':
-        dy = 1
-    elif direction == 'S':
-        dy = -1
-    elif direction == 'E':
-        dx = 1
-    elif direction == 'W':
-        dx = -1
-
+    # Xoá stench ở ô hiện tại khỏi KB
     x, y = agent.pos
-    x += dx
-    y += dy
-    while 0 <= x < N and 0 <= y < N:
-        KB.add(f"!Wumpus({x},{y})")
-        x += dx
-        y += dy
+    for clause in list(KB):
+        if f"Stench({x},{y})" in clause:
+            KB.remove(clause)
 
 # ===== ENHANCED: IN KB VÀ INFERENCE RESULTS =====
 def print_KB_with_inference(KB, x, y, percept, debug_info):

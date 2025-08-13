@@ -67,6 +67,7 @@ def update_world_with_inference(world, KB, prev_pos, curr_pos, advance_mode=Fals
             
     
     world[0][0]["safe"] = True
+    world[0][0]["uncertain"] = False
 
     return debug_info
 
@@ -83,6 +84,7 @@ def place_feature(key, count):
             if key == "glitter":
                 world[y][x]["glitter"] = True
                 break
+            # x, y = 0, 1
             world[y][x][key] = True
             if (key != "glitter"):
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:

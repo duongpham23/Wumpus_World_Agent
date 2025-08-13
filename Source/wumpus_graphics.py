@@ -38,9 +38,9 @@ def draw_world_with_inference(screen, world, agent_x, agent_y, font, direction, 
             cell = world[y][x]
             
             # Chọn màu dựa trên trạng thái inference
-            # if cell["visited"]:
-            #     color = DARK_GRAY
-            if cell["safe"]:
+            if cell["visited"]:
+                color = DARK_GRAY
+            elif cell["safe"]:
                 color = GREEN
             elif cell["dangerous"]:
                 color = RED
@@ -277,27 +277,27 @@ def simulate_agent(world, advance_mode=False):
         # Action
         # Chỉ thực hiện 1 trong 3 action sau:
         if shoot:
-            if agent.shoot_arrow():
-                percept = {
-                    "breeze": world[y][x]["breeze"],
-                    "stench": world[y][x]["stench"],
-                    "glitter": world[y][x]["glitter"]
-                }
+            agent.shoot_arrow()
+            percept = {
+                "breeze": world[y][x]["breeze"],
+                "stench": world[y][x]["stench"],
+                "glitter": world[y][x]["glitter"]
+            }
 
-                # Cập nhật KB
-                inference.update_KB(x, y, percept, KB, N)
+            # Cập nhật KB
+            inference.update_KB(x, y, percept, KB, N)
 
-                # inference.update_KB_after_shot(agent, KB, N)
-                
-                # BỔ SUNG: Chạy inference engine
-                wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
+            inference.update_KB_after_shot(agent, KB, N)
+            
+            # BỔ SUNG: Chạy inference engine
+            wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
 
-                next_goal = solver.choose_next_goal(state.State(agent), world)
-                path = solver.a_star(state.State(agent), next_goal)
+            next_goal = solver.choose_next_goal(state.State(agent), world)
+            path = solver.a_star(state.State(agent), next_goal)
         elif world[y][x]["glitter"]:
             agent.grab_gold()
             print("💰 Collected gold! Climbing out of the dungeon...")
-            next_goal = (0, 0)  # Đặt mục tiêu là về đích
+            next_goal = solver.choose_next_goal(state.State(agent), world)
             path = solver.a_star(state.State(agent), next_goal)
             world[y][x]["glitter"] = False
         else:

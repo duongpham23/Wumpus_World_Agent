@@ -100,7 +100,7 @@ class State:
                 new_state = State(new_agent, "safe", self.cost + 1, 0, self)
                 children.append(new_state)
             elif cell["uncertain"]:
-                new_state = State(new_agent, "uncertain", self.cost + 1, 0, self)
+                new_state = State(new_agent, "uncertain", self.cost + 10, 0, self)
                 children.append(new_state)
 
         # Quay trái
