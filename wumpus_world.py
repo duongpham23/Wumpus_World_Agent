@@ -121,27 +121,36 @@ def update_world_with_inference(world, KB, prev_pos, curr_pos, mode="standard"):
 
 import random
 # ===== World setup =====
-def place_feature(key, count):
-    placed = 0
-    while placed < count:
-        x = random.randint(0, N - 1)
-        y = random.randint(0, N - 1)
-        if (x, y) == (0, 0):
-            continue
-        if not world[y][x]["wumpus"] and not world[y][x]["pit"]:
-            if key == "glitter":
-                world[y][x]["glitter"] = True
-                break
-            world[y][x][key] = True
-            if (key != "glitter"):
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nx, ny = x + dx, y + dy
-                    if in_bounds(nx, ny):
-                        if key == "pit":
-                            world[ny][nx]["breeze"] = True
-                        elif key == "wumpus":
+def place_feature(key, count=0, pit_prob=0):
+    if key == "pit":
+       for y in range(N):
+           for x in range(N):
+               if (x, y) == (0, 0):
+                   continue
+               if random.random() < pit_prob:
+                   world[y][x]["pit"] = True
+                   for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                       nx, ny = x + dx, y + dy
+                       if in_bounds(nx, ny):
+                           world[ny][nx]["breeze"] = True
+    else:
+        placed = 0
+        while placed < count:
+            x = random.randint(0, N - 1)
+            y = random.randint(0, N - 1)
+            if (x, y) == (0, 0):
+                continue
+            if not world[y][x]["wumpus"] and not world[y][x]["pit"]:
+                if key == "glitter":
+                    world[y][x]["glitter"] = True
+                    break
+                world[y][x][key] = True
+                if (key != "glitter"):
+                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        nx, ny = x + dx, y + dy
+                        if in_bounds(nx, ny):
                             world[ny][nx]["stench"] = True
-            placed += 1
+                placed += 1
 
 def wumpus_update_stench():
     """
