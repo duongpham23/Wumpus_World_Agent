@@ -4,14 +4,15 @@ import wumpus_world
 world = wumpus_world.world
 
 NUM_WUMPUS = wumpus_world.NUM_WUMPUS
-NUM_PITS = wumpus_world.NUM_PITS
+PIT_PROB = wumpus_world.PIT_PROB
+MODE = wumpus_world.MODE
 
 # ===== Main =====
 if __name__ == "__main__":
     print("🎮 Initializing Wumpus World with Inference Engine...")
-    wumpus_world.place_feature("wumpus", NUM_WUMPUS)
-    wumpus_world.place_feature("pit", 8)
-    wumpus_world.place_feature("glitter", 1)
-    print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {NUM_PITS} Pits")
+    wumpus_world.place_feature("wumpus", count=2)
+    wumpus_world.place_feature("pit", pit_prob=0.1)
+    wumpus_world.place_feature("glitter", count=1)
+    print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {PIT_PROB} Pits appear in cell")
     print("🚀 Starting simulation...")
-    graphics.simulate_agent(world, True)
+    graphics.simulate_agent(world, True if MODE == "advance" else False)

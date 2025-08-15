@@ -38,9 +38,9 @@ def draw_world_with_inference(screen, world, agent_x, agent_y, font, direction, 
             cell = world[y][x]
             
             # Chọn màu dựa trên trạng thái inference
-            if cell["visited"]:
-                color = DARK_GRAY
-            elif cell["safe"]:
+            # if cell["visited"]:
+            #     color = DARK_GRAY
+            if cell["safe"]:
                 color = GREEN
             elif cell["dangerous"]:
                 color = RED
@@ -152,15 +152,16 @@ def simulate_agent(world, advance_mode=False):
     agent = Agent.Agent((0, 0), 'E')
     running = True
     path = []
-    cnt = 0
+    cnt = 0 # Đếm số action của agent, chỉ có tác dụng trong advanced mode
     next_goal = None
-    shoot = False
 
     score_move = -1
     score_gold = 100
     score = 0
     steps = 0
-    prev_pos = (0, 0)
+    prev_pos = (-1, -1)
+    # Ô không cần cập nhật, chỉ sài khi bắn tên
+    no_update_cells = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -170,8 +171,11 @@ def simulate_agent(world, advance_mode=False):
 
         x, y = agent.pos
         direction = agent.direction
+        shoot = False
 
         world[y][x]["visited"] = True
+        # Những ô cần cập nhật
+        cell_to_update = []
 
         # Nếu thấy rủi ro, cụ thể là thấy stench
         # Nếu mới bắn ở hướng này rồi thì không bắn nữa
@@ -181,12 +185,29 @@ def simulate_agent(world, advance_mode=False):
             # Xoá hết ký ức về stench
             if advance_mode:
                 inference.remove_old_stench_from_KB(KB)
-                path = []
+                # Nếu vừa mới bước vô ô này thì cập nhật lại 3 ô trước mặt
+                if (x, y) != prev_pos:
+                    # ô trước mặt
+                    clone = agent.clone()
+                    if clone.move_forward():
+                        cell_to_update.append((clone.pos))
+
+                    # ô bên trái
+                    clone = agent.clone()
+                    clone.turn_left()
+                    if clone.move_forward():
+                        cell_to_update.append((clone.pos))
+
+                    # ô bên phải
+                    clone = agent.clone()
+                    clone.turn_right()
+                    if clone.move_forward():
+                        cell_to_update.append((clone.pos))
 
             if not shoot and agent.num_arrow > 0:
                 # Đập mặt vô tường thì không bắn
                 if not agent.facing_to_wall():
-                    path.insert(0, ((x, y), direction, True)) # path = [pos, direction, shoot]
+                    shoot = True
 
         percept = {
             "breeze": world[y][x]["breeze"],
@@ -198,7 +219,7 @@ def simulate_agent(world, advance_mode=False):
         inference.update_KB(x, y, percept, KB, N)
         
         # Chạy inference
-        debug_info = wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
+        debug_info = wumpus_world.update_world_with_inference(world, KB, cell_to_update, no_update_cells)
 
         # In thông tin với debug
         inference.print_KB_with_inference(KB, x, y, percept, debug_info)
@@ -255,62 +276,41 @@ def simulate_agent(world, advance_mode=False):
             else:
                 # Tìm lại coi còn ô safe nào chưa khám phá sao khi đi về không, xảy ra khi có wumpus chặn đường và đã xử được con wumpus đó
                 next_goal = solver.choose_next_goal(state.State(agent), world)
-                if next_goal != (0, 0):
-                    path = solver.a_star(state.State(agent), next_goal)
-                elif (x, y) == (0, 0):
+                if next_goal == (0, 0) and (x, y) == (0, 0):
                     print("Climbing out of the dungeon!")
                     break
 
-        if path == []:
-            next_goal = solver.choose_next_goal(state.State(agent), world)
-            path = solver.a_star(state.State(agent), next_goal)
-            if path == []:
-                continue
+        next_goal = solver.choose_next_goal(state.State(agent), world)
+        path = solver.a_star(state.State(agent), next_goal)
+        if not path:
+            continue
 
         time.sleep(DELAY)
         next_step = path.pop(0)
-        if len(next_step) > 2:
-            shoot = next_step[2]
-        else:
-            shoot = False
 
         # Action
         # Chỉ thực hiện 1 trong 3 action sau:
+        # Riêng với hành động bắn tên, nếu bắn rồi thì đi luôn
+        no_update_cells = []
         if shoot:
             agent.shoot_arrow()
-            percept = {
-                "breeze": world[y][x]["breeze"],
-                "stench": world[y][x]["stench"],
-                "glitter": world[y][x]["glitter"]
-            }
-
-            # Cập nhật KB
-            inference.update_KB(x, y, percept, KB, N)
-
-            inference.update_KB_after_shot(agent, KB, N)
-            
-            # BỔ SUNG: Chạy inference engine
-            wumpus_world.update_world_with_inference(world, KB, prev_pos, (x, y), advance_mode)
-
-            next_goal = solver.choose_next_goal(state.State(agent), world)
-            path = solver.a_star(state.State(agent), next_goal)
+            # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
+            if not world[y][x]["breeze"]:
+                clone = agent.clone()
+                clone.move_forward()
+                no_update_cells.append(clone.pos)
+                world[clone.pos[1]][clone.pos[0]]["safe"] = True
+                world[clone.pos[1]][clone.pos[0]]["uncertain"] = False
+                world[clone.pos[1]][clone.pos[0]]["dangerous"] = False
         elif world[y][x]["glitter"]:
             agent.grab_gold()
             print("💰 Collected gold! Climbing out of the dungeon...")
-            next_goal = solver.choose_next_goal(state.State(agent), world)
-            path = solver.a_star(state.State(agent), next_goal)
             world[y][x]["glitter"] = False
+            score += score_gold
         else:
             # Cập nhật trạng thái
-            new_x = next_step[0][0]
-            new_y = next_step[0][1]
-
-            if (new_x, new_y) != (x, y):
-                prev_pos = (x, y)
-
-            x = new_x
-            y = new_y
-
+            prev_pos = (x, y)
+            (x, y) = next_step[0]
             direction = next_step[1]
             agent.update((x, y), direction)
 

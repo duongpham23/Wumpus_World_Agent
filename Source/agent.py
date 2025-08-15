@@ -13,6 +13,9 @@ class Agent:
         self.gold_collected = False
 
     def move_forward(self):
+        if self.facing_to_wall():
+            return False
+
         new_x, new_y = self.pos
         if self.direction == 'N':
             new_y += 1
@@ -24,6 +27,8 @@ class Agent:
             new_x -= 1
         self.pos = (new_x, new_y)
         self.score -= 1
+        
+        return True
 
     def turn_left(self):
         if self.direction == 'N': # Bắc
