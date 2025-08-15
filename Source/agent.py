@@ -107,9 +107,10 @@ class Agent:
 
     def dead(self):
         x, y = self.pos
-        if world[y][x]["wumpus"]:
-            print("💀 Agent is dead!")
+        if world[y][x]["wumpus"] or world[y][x]["pit"]:
             self.score -= 1000
+            print("💀 Agent is dead!")
+            print("Score: ", self.score)
             return True
         return False
     
@@ -122,6 +123,7 @@ class Agent:
                 print("Climbing out of the dungeon with gold!")
             else:
                 print("Climbing out of the dungeon!")
+            print("Score: ", self.score)
             return True
         return False
 

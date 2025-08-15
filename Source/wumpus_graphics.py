@@ -38,9 +38,9 @@ def draw_world_with_inference(screen, world, agent_x, agent_y, font, direction, 
             cell = world[y][x]
             
             # Chọn màu dựa trên trạng thái inference
-            # if cell["visited"]:
-            #     color = DARK_GRAY
-            if cell["safe"]:
+            if cell["visited"]:
+                color = DARK_GRAY
+            elif cell["safe"]:
                 color = GREEN
             elif cell["dangerous"]:
                 color = RED
