@@ -69,7 +69,7 @@ def in_bounds(x, y):
 
 # ===== BỔ SUNG: CẬP NHẬT WORLD VỚI INFERENCE =====
 # ===== FIXED: CẬP NHẬT WORLD VỚI INFERENCE =====
-def update_world_with_inference(world, KB, update_cell: list, no_update_cells: list):
+def update_world_with_inference(world, KB, cell_to_update: list, update_safe_cells: list):
     # Tạo inference engine instance
     import wumpus_inference as inference
     inference_engine = inference.InferenceEngine(N)
@@ -78,19 +78,20 @@ def update_world_with_inference(world, KB, update_cell: list, no_update_cells: l
 
     for y in range(N):
         for x in range(N):
-            if (x, y) in no_update_cells:
-                continue
-            if not world[y][x]["visited"] or (x, y) in update_cell:
+            if not world[y][x]["visited"] or (x, y) in cell_to_update or (x, y) in update_safe_cells:
                 status, inferences = inference_engine.infer_cell_status(x, y, KB)
                 debug_info[(x,y)] = (status, inferences)
-                
 
                 # Reset trạng thái cũ
                 world[y][x]["safe"] = False
                 world[y][x]["dangerous"] = False
                 world[y][x]["uncertain"] = False
-                
+
                 # Set trạng thái mới
+                if (x, y) in update_safe_cells:
+                    world[y][x]["safe"] = True
+                    continue
+
                 if status == 'safe':
                     world[y][x]["safe"] = True
                 elif status == 'dangerous':

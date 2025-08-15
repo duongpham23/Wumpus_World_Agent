@@ -152,16 +152,12 @@ def simulate_agent(world, advance_mode=False):
     agent = Agent.Agent((0, 0), 'E')
     running = True
     path = []
-    cnt = 0 # Đếm số action của agent, chỉ có tác dụng trong advanced mode
     next_goal = None
 
-    score_move = -1
-    score_gold = 100
-    score = 0
-    steps = 0
+    steps = 0 # Đếm số action của agent
     prev_pos = (-1, -1)
-    # Ô không cần cập nhật, chỉ sài khi bắn tên
-    no_update_cells = []
+    # Ô cần cập nhật là safe, chỉ có tác dụng tạm thời
+    update_safe_cells = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -176,6 +172,7 @@ def simulate_agent(world, advance_mode=False):
         world[y][x]["visited"] = True
         # Những ô cần cập nhật
         cell_to_update = []
+        update_safe_cells = [(x, y)]
 
         # Nếu thấy rủi ro, cụ thể là thấy stench
         # Nếu mới bắn ở hướng này rồi thì không bắn nữa
@@ -219,7 +216,7 @@ def simulate_agent(world, advance_mode=False):
         inference.update_KB(x, y, percept, KB, N)
         
         # Chạy inference
-        debug_info = wumpus_world.update_world_with_inference(world, KB, cell_to_update, no_update_cells)
+        debug_info = wumpus_world.update_world_with_inference(world, KB, cell_to_update, update_safe_cells)
 
         # In thông tin với debug
         inference.print_KB_with_inference(KB, x, y, percept, debug_info)
@@ -234,10 +231,10 @@ def simulate_agent(world, advance_mode=False):
         dangerous_count = sum(1 for row in world for cell in row if cell.get("dangerous"))
 
         stats = {
-            "score": score,
+            "score": agent.score,
             "gold": agent.gold_collected,
             "steps": steps,
-            "pos": (x, y),
+            "pos": agent.pos,
             "visited_count": visited_count,
             "safe_count": safe_count,
             "uncertain_count": uncertain_count,
@@ -250,7 +247,7 @@ def simulate_agent(world, advance_mode=False):
         pygame.display.flip()
 
         # Kiểm tra agent có bị wumpus ăn không
-        if world[y][x]["wumpus"]:
+        if agent.dead():
             msg = f"🚨 Agent eaten by Wumpus at ({x}, {y})! Game Over."
             print(msg)
             # Hiển thị lên màn hình bằng pygame
@@ -270,56 +267,46 @@ def simulate_agent(world, advance_mode=False):
         if next_goal is not None and next_goal == (0, 0):
             # Nếu có vàng
             if agent.gold_collected:
-                if (x, y) == (0, 0):
-                    print("Climbing out of the dungeon with gold!")
+                if agent.climb_out():
                     break
             else:
                 # Tìm lại coi còn ô safe nào chưa khám phá sao khi đi về không, xảy ra khi có wumpus chặn đường và đã xử được con wumpus đó
                 next_goal = solver.choose_next_goal(state.State(agent), world)
-                if next_goal == (0, 0) and (x, y) == (0, 0):
-                    print("Climbing out of the dungeon!")
+                if next_goal == (0, 0) and agent.climb_out():
                     break
 
-        next_goal = solver.choose_next_goal(state.State(agent), world)
-        path = solver.a_star(state.State(agent), next_goal)
-        if not path:
-            continue
-
         time.sleep(DELAY)
-        next_step = path.pop(0)
 
         # Action
         # Chỉ thực hiện 1 trong 3 action sau:
         # Riêng với hành động bắn tên, nếu bắn rồi thì đi luôn
-        no_update_cells = []
+
         if shoot:
             agent.shoot_arrow()
             # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
             if not world[y][x]["breeze"]:
                 clone = agent.clone()
                 clone.move_forward()
-                no_update_cells.append(clone.pos)
-                world[clone.pos[1]][clone.pos[0]]["safe"] = True
-                world[clone.pos[1]][clone.pos[0]]["uncertain"] = False
-                world[clone.pos[1]][clone.pos[0]]["dangerous"] = False
+                update_safe_cells.append(clone.pos)
         elif world[y][x]["glitter"]:
             agent.grab_gold()
             print("💰 Collected gold! Climbing out of the dungeon...")
             world[y][x]["glitter"] = False
-            score += score_gold
         else:
+            next_goal = solver.choose_next_goal(state.State(agent), world)
+            path = solver.a_star(state.State(agent), next_goal)
+            if not path:
+                continue
+            next_step = path.pop(0)
+
             # Cập nhật trạng thái
             prev_pos = (x, y)
             (x, y) = next_step[0]
             direction = next_step[1]
             agent.update((x, y), direction)
 
-            # cập nhập điểm
-            steps += 1
-            score += score_move
-
         # Nếu đạp trúng wumpus, die
-        if world[y][x]["wumpus"]:
+        if agent.dead():
             msg = f"Agent stepped on Wumpus at ({x}, {y})! Game Over."
             print(msg)
 
@@ -344,11 +331,10 @@ def simulate_agent(world, advance_mode=False):
 
             break
 
-        # advance
-        if advance_mode:
-            cnt += 1
-            if cnt % 5 == 0:
-                wumpus_world.wumpus_move()
+        steps += 1
+        # advance mode
+        if steps % 5 == 0 and advance_mode:
+            wumpus_world.wumpus_move()
 
     print("Simulation ended.")
     time.sleep(3)  # Chờ trước khi đóng

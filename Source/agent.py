@@ -105,6 +105,26 @@ class Agent:
         print("❌ No Wumpus hit")
         return False
 
+    def dead(self):
+        x, y = self.pos
+        if world[y][x]["wumpus"]:
+            print("💀 Agent is dead!")
+            self.score -= 1000
+            return True
+        return False
+    
+    # Trả true nếu trèo ra ngoài được
+    def climb_out(self):
+        x, y = self.pos
+        if (x, y) == (0, 0):
+            if self.gold_collected:
+                self.score += 1000
+                print("Climbing out of the dungeon with gold!")
+            else:
+                print("Climbing out of the dungeon!")
+            return True
+        return False
+
     def facing_to_wall(self):
         x, y = self.pos
         if x == 0 and self.direction == 'W':
