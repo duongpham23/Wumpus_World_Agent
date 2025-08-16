@@ -9,16 +9,18 @@ def get_user_config():
         result['NUM_WUMPUS'] = int(wumpus_var.get())
         result['PIT_PROB'] = float(pit_var.get())
         result['mode_var'] = mode_var.get()
+        result['agent'] = agent_var.get()
         root.destroy()
 
     root = tk.Tk()
     root.title("Chọn thông số Wumpus World")
-    root.geometry("500x400")
+    root.geometry("400x600")
 
     size_var = tk.StringVar(value="8")
     wumpus_var = tk.StringVar(value="2")
     pit_var = tk.StringVar(value="0.2")
     mode_var = tk.StringVar(value="standard")
+    agent_var = tk.StringVar(value="smart")
 
     font = ("Arial", 16)
     height = 10
@@ -36,6 +38,9 @@ def get_user_config():
     
     ttk.Label(root, text="Chế độ", font=font).pack()
     ttk.Combobox(root, textvariable=mode_var, values=["advance", "standard"], font=font, height=height).pack()
+    
+    ttk.Label(root, text="Chọn agent", font=font).pack()
+    ttk.Combobox(root, textvariable=agent_var, values=["smart", "basic"], font=font, height=height).pack()
 
     ttk.Button(root, text="Khởi tạo trò chơi", command=submit, style="Big.TButton").pack(pady=15)
 
@@ -51,6 +56,7 @@ NUM_WUMPUS = user_config['NUM_WUMPUS']
 PIT_PROB = user_config['PIT_PROB']
 NUM_PITS = round(PIT_PROB * (N * N - 1))
 MODE = user_config['mode_var']
+AGENT = user_config['agent']
 # ===== World init =====
 world = [[{
     "pit": False,

@@ -138,7 +138,7 @@ def draw_sidebar(agent: Agent.Agent,screen, font_title, font_text, stats, direct
 
 
 # ===== Simulation =====
-def simulate_agent(world, advance_mode=False):
+def simulate_agent(world, advance_mode=False, smart_agent=True):
     import solver
     import state
 
@@ -148,6 +148,39 @@ def simulate_agent(world, advance_mode=False):
     font = pygame.font.Font(None, 36)
     font_title = pygame.font.Font(None, 28)
     font_text = pygame.font.Font(None, 24)
+    
+    # Hàm thông báo
+    def notify_user(message):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(200)
+        overlay.fill((0, 0, 0))
+        screen.blit(overlay, (0, 0))
+        font_end = pygame.font.Font(None, 60)
+        lines = message.split('\n')
+        for i, line in enumerate(lines):
+            text_surf = font_end.render(line, True, (255, 255, 0))
+            # Tính vị trí y cho từng dòng, căn giữa màn hình
+            text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + (i - len(lines)//2) * 70))
+            screen.blit(text_surf, text_rect)
+        pygame.display.flip()
+        time.sleep(2)
+        
+    # Hàm lấy trạng thái cho sidebar
+    def get_stats(agent, world, steps, direction, percept):
+        visited_count   = sum(1 for row in world for cell in row if cell.get("visited"))
+        safe_count      = sum(1 for row in world for cell in row if cell.get("safe"))
+        uncertain_count = sum(1 for row in world for cell in row if cell.get("uncertain"))
+        dangerous_count = sum(1 for row in world for cell in row if cell.get("dangerous"))
+        return {
+            "score": agent.score,
+            "gold": agent.gold_collected,
+            "steps": steps,
+            "pos": agent.pos,
+            "visited_count": visited_count,
+            "safe_count": safe_count,
+            "uncertain_count": uncertain_count,
+            "dangerous_count": dangerous_count
+    }
 
     agent = Agent.Agent((0, 0), 'E')
     running = True
@@ -225,21 +258,7 @@ def simulate_agent(world, advance_mode=False):
         draw_world_with_inference(screen, world, x, y, font, direction, shoot)
 
         # Tạo stats từ world (đảm bảo các cell có keys 'visited','safe','uncertain','dangerous')
-        visited_count   = sum(1 for row in world for cell in row if cell.get("visited"))
-        safe_count      = sum(1 for row in world for cell in row if cell.get("safe"))
-        uncertain_count = sum(1 for row in world for cell in row if cell.get("uncertain"))
-        dangerous_count = sum(1 for row in world for cell in row if cell.get("dangerous"))
-
-        stats = {
-            "score": agent.score,
-            "gold": agent.gold_collected,
-            "steps": steps,
-            "pos": agent.pos,
-            "visited_count": visited_count,
-            "safe_count": safe_count,
-            "uncertain_count": uncertain_count,
-            "dangerous_count": dangerous_count
-        }
+        stats = get_stats(agent, world, steps, direction, percept)
         
         # Vẽ sidebar (sau draw_world_with_inference)
         draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
@@ -248,19 +267,12 @@ def simulate_agent(world, advance_mode=False):
 
         # Kiểm tra agent có bị wumpus ăn không
         if agent.dead():
-            msg = f"🚨 Agent eaten by Wumpus at ({x}, {y})! Game Over."
+            stats = get_stats(agent, world, steps, direction, percept)
+            draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
+            msg = f"🚨 Agent eaten by Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
             print(msg)
-            # Hiển thị lên màn hình bằng pygame
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            overlay.set_alpha(200)
-            overlay.fill((0, 0, 0))
-            screen.blit(overlay, (0, 0))
-            font_end = pygame.font.Font(None, 60)
-            text_surf = font_end.render(msg, True, (255, 0, 0))
-            text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            screen.blit(text_surf, text_rect)
-            pygame.display.flip()
-            time.sleep(2)
+            # Hiển thị lên màn hình
+            notify_user(msg)
             break
 
         # Nếu mục đích là đi về
@@ -268,11 +280,23 @@ def simulate_agent(world, advance_mode=False):
             # Nếu có vàng
             if agent.gold_collected:
                 if agent.climb_out():
+                    stats = get_stats(agent, world, steps, direction, percept)
+                    draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
+                    msg = f"Climbing out of the dungeon with gold!\nScore: {agent.score}"
+                    print(msg)
+                    # Hiển thị lên màn hình
+                    notify_user(msg)
                     break
             else:
                 # Tìm lại coi còn ô safe nào chưa khám phá sao khi đi về không, xảy ra khi có wumpus chặn đường và đã xử được con wumpus đó
                 next_goal = solver.choose_next_goal(state.State(agent), world)
                 if next_goal == (0, 0) and agent.climb_out():
+                    stats = get_stats(agent, world, steps, direction, percept)
+                    draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
+                    msg = f"Climbing out of the dungeon!\nScore: {agent.score}"
+                    print(msg)
+                    # Hiển thị lên màn hình
+                    notify_user(msg)
                     break
 
         time.sleep(DELAY)
@@ -281,44 +305,43 @@ def simulate_agent(world, advance_mode=False):
         # Chỉ thực hiện 1 trong 3 action sau:
         # Riêng với hành động bắn tên, nếu bắn rồi thì đi luôn
 
-        if shoot:
-            agent.shoot_arrow()
-            # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
-            if not world[y][x]["breeze"]:
-                clone = agent.clone()
-                clone.move_forward()
-                update_safe_cells.append(clone.pos)
-        elif world[y][x]["glitter"]:
-            agent.grab_gold()
-            print("💰 Collected gold! Climbing out of the dungeon...")
-            world[y][x]["glitter"] = False
-        else:
-            next_goal = solver.choose_next_goal(state.State(agent), world)
-            path = solver.a_star(state.State(agent), next_goal)
-            if not path:
-                continue
-            next_step = path.pop(0)
+        if (smart_agent):
+            if shoot:
+                agent.shoot_arrow()
+                # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
+                if not world[y][x]["breeze"]:
+                    clone = agent.clone()
+                    clone.move_forward()
+                    update_safe_cells.append(clone.pos)
+            elif world[y][x]["glitter"]:
+                agent.grab_gold()
+                print("💰 Collected gold! Climbing out of the dungeon...")
+                world[y][x]["glitter"] = False
+            else:
+                next_goal = solver.choose_next_goal(state.State(agent), world)
+                path = solver.a_star(state.State(agent), next_goal)
+                if not path:
+                    continue
+                next_step = path.pop(0)
 
-            # Cập nhật trạng thái
-            prev_pos = (x, y)
-            (x, y) = next_step[0]
-            direction = next_step[1]
-            agent.update((x, y), direction)
+                # Cập nhật trạng thái
+                prev_pos = (x, y)
+                (x, y) = next_step[0]
+                direction = next_step[1]
+                agent.update((x, y), direction)
+        else:
+            # Bỏ code agent basic ở đây <-------------------------------------------
+            print("Basic agent is not implemented yet.")
+            running = False
 
         # Nếu đạp trúng wumpus, die
         if agent.dead():
-            msg = f"Agent stepped on Wumpus at ({x}, {y})! Game Over."
+            stats = get_stats(agent, world, steps, direction, percept)
+            draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
+            msg = f"Agent stepped on Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
             print(msg)
-
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            overlay.set_alpha(200)
-            overlay.fill((0, 0, 0))
-            screen.blit(overlay, (0, 0))
-            font_end = pygame.font.Font(None, 60)
-            text_surf = font_end.render(msg, True, (255, 0, 0))
-            text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            screen.blit(text_surf, text_rect)
-            pygame.display.flip()
+            # Hiển thị lên màn hình
+            notify_user(msg)
             # Chờ người dùng đóng
             while True:
                 for event in pygame.event.get():
