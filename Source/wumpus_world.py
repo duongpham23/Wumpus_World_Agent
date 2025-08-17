@@ -19,7 +19,7 @@ def get_user_config():
     size_var = tk.StringVar(value="8")
     wumpus_var = tk.StringVar(value="2")
     pit_var = tk.StringVar(value="0.2")
-    mode_var = tk.StringVar(value="standard")
+    mode_var = tk.StringVar(value="advanced")
     agent_var = tk.StringVar(value="smart")
 
     font = ("Arial", 16)
@@ -37,7 +37,7 @@ def get_user_config():
     ttk.Combobox(root, textvariable=pit_var, values=["0.1", "0.2", "0.3", "0.4", "0.5"], font=font, height=height).pack()
     
     ttk.Label(root, text="Chế độ", font=font).pack()
-    ttk.Combobox(root, textvariable=mode_var, values=["advance", "standard"], font=font, height=height).pack()
+    ttk.Combobox(root, textvariable=mode_var, values=["advanced", "standard"], font=font, height=height).pack()
     
     ttk.Label(root, text="Chọn agent", font=font).pack()
     ttk.Combobox(root, textvariable=agent_var, values=["smart", "basic"], font=font, height=height).pack()

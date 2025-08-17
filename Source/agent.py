@@ -58,14 +58,14 @@ class Agent:
             cell = world[y][x]
             if cell["glitter"]:
                 cell["glitter"] = False
-                self.score += 100
+                self.score += 10
                 self.gold_collected = True
     
-    def climb_out(self):
-        x, y = self.pos
-        if (x, y) == (0, 0):
-            if self.gold_collected:
-                self.score += 1000
+    # def climb_out(self):
+    #     x, y = self.pos
+    #     if (x, y) == (0, 0):
+    #         if self.gold_collected:
+    #             self.score += 1000
 
     def shoot_arrow(self):
         x, y = self.pos

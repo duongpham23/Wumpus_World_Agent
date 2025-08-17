@@ -3,13 +3,14 @@ import wumpus_inference as inference
 import time
 import pygame
 import agent as Agent
+import random
 
 # Pygame constants
 NUM_WUMPUS = wumpus_world.NUM_WUMPUS
 NUM_PITS = wumpus_world.NUM_PITS
 N = wumpus_world.N
 KB = inference.KB
-DELAY = 1  # Delay giữa các bước
+DELAY = 0.3  # Delay giữa các bước
 
 SIDEBAR_WIDTH = 450
 CELL_SIZE = 70
@@ -138,7 +139,7 @@ def draw_sidebar(agent: Agent.Agent,screen, font_title, font_text, stats, direct
 
 
 # ===== Simulation =====
-def simulate_agent(world, advance_mode=False, smart_agent=True):
+def simulate_agent(world, advanced_mode=False, smart_agent=True):
     import solver
     import state
 
@@ -150,7 +151,7 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
     font_text = pygame.font.Font(None, 24)
     
     # Hàm thông báo
-    def notify_user(message):
+    def notify_user(message, color=YELLOW):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         overlay.set_alpha(200)
         overlay.fill((0, 0, 0))
@@ -158,7 +159,7 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
         font_end = pygame.font.Font(None, 60)
         lines = message.split('\n')
         for i, line in enumerate(lines):
-            text_surf = font_end.render(line, True, (255, 255, 0))
+            text_surf = font_end.render(line, True, color)
             # Tính vị trí y cho từng dòng, căn giữa màn hình
             text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + (i - len(lines)//2) * 70))
             screen.blit(text_surf, text_rect)
@@ -189,6 +190,7 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
 
     steps = 0 # Đếm số action của agent
     prev_pos = (-1, -1)
+    prev_goal = (-1, -1)
     # Ô cần cập nhật là safe, chỉ có tác dụng tạm thời
     update_safe_cells = []
     while True:
@@ -211,9 +213,9 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
         # Nếu mới bắn ở hướng này rồi thì không bắn nữa
         if world[y][x]["stench"]:
             print("🚨 Danger! Stench detected.")
-            # For advance
+            # For advanced
             # Xoá hết ký ức về stench
-            if advance_mode:
+            if advanced_mode:
                 inference.remove_old_stench_from_KB(KB)
                 # Nếu vừa mới bước vô ô này thì cập nhật lại 3 ô trước mặt
                 if (x, y) != prev_pos:
@@ -269,10 +271,10 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
         if agent.dead():
             stats = get_stats(agent, world, steps, direction, percept)
             draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
-            msg = f"🚨 Agent eaten by Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
-            print(msg)
+            msg = f"Agent eaten by Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
+            print('🚨 ' + msg)
             # Hiển thị lên màn hình
-            notify_user(msg)
+            notify_user(msg, RED)
             break
 
         # Nếu mục đích là đi về
@@ -285,7 +287,7 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
                     msg = f"Climbing out of the dungeon with gold!\nScore: {agent.score}"
                     print(msg)
                     # Hiển thị lên màn hình
-                    notify_user(msg)
+                    notify_user(msg, YELLOW)
                     break
             else:
                 # Tìm lại coi còn ô safe nào chưa khám phá sao khi đi về không, xảy ra khi có wumpus chặn đường và đã xử được con wumpus đó
@@ -296,7 +298,7 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
                     msg = f"Climbing out of the dungeon!\nScore: {agent.score}"
                     print(msg)
                     # Hiển thị lên màn hình
-                    notify_user(msg)
+                    notify_user(msg, GREEN)
                     break
 
         time.sleep(DELAY)
@@ -304,44 +306,45 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
         # Action
         # Chỉ thực hiện 1 trong 3 action sau:
         # Riêng với hành động bắn tên, nếu bắn rồi thì đi luôn
-
-        if (smart_agent):
-            if shoot:
-                agent.shoot_arrow()
-                # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
-                if not world[y][x]["breeze"]:
-                    clone = agent.clone()
-                    clone.move_forward()
-                    update_safe_cells.append(clone.pos)
-            elif world[y][x]["glitter"]:
-                agent.grab_gold()
-                print("💰 Collected gold! Climbing out of the dungeon...")
-                world[y][x]["glitter"] = False
-            else:
-                next_goal = solver.choose_next_goal(state.State(agent), world)
-                path = solver.a_star(state.State(agent), next_goal)
-                if not path:
-                    continue
-                next_step = path.pop(0)
-
-                # Cập nhật trạng thái
-                prev_pos = (x, y)
-                (x, y) = next_step[0]
-                direction = next_step[1]
-                agent.update((x, y), direction)
+        if shoot:
+            agent.shoot_arrow()
+            # Nếu ô hiện tại không có brezze thì chắc ăn ô trước mặt an toàn
+            if not world[y][x]["breeze"]:
+                clone = agent.clone()
+                clone.move_forward()
+                update_safe_cells.append(clone.pos)
+        elif world[y][x]["glitter"]:
+            agent.grab_gold()
+            print("💰 Collected gold! Climbing out of the dungeon...")
+            world[y][x]["glitter"] = False
         else:
-            # Bỏ code agent basic ở đây <-------------------------------------------
-            print("Basic agent is not implemented yet.")
-            running = False
+            if smart_agent: # next goal based the world and percept
+                next_goal = solver.choose_next_goal(state.State(agent), world)
+            else: # next gold based on pure luck....
+                next_goal = solver.choose_random_next_goal(state.State(agent), prev_pos, prev_goal)
+                prev_goal = next_goal
+            path = solver.a_star(state.State(agent), next_goal)
+            if not path:
+                continue
+            next_step = path.pop(0)
 
+            # Cập nhật trạng thái
+            prev_pos = (x, y)
+            (x, y) = next_step[0]
+            direction = next_step[1]
+            agent.update((x, y), direction)
+    
         # Nếu đạp trúng wumpus, die
         if agent.dead():
             stats = get_stats(agent, world, steps, direction, percept)
             draw_sidebar(agent, screen, font_title, font_text, stats, direction, percept)
-            msg = f"Agent stepped on Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
-            print(msg)
+            if world[y][x]["pit"]:
+                msg = f"Agent fell down Pit at ({x}, {y})! Game Over.\nScore: {agent.score}"
+            else:
+                msg = f"Agent stepped on Wumpus at ({x}, {y})! Game Over.\nScore: {agent.score}"
+            print('🚨 ' + msg)
             # Hiển thị lên màn hình
-            notify_user(msg)
+            notify_user(msg, BLUE)
             # Chờ người dùng đóng
             while True:
                 for event in pygame.event.get():
@@ -355,8 +358,8 @@ def simulate_agent(world, advance_mode=False, smart_agent=True):
             break
 
         steps += 1
-        # advance mode
-        if steps % 5 == 0 and advance_mode:
+        # advanced mode
+        if steps % 5 == 0 and advanced_mode:
             wumpus_world.wumpus_move()
 
     print("Simulation ended.")
