@@ -13,6 +13,7 @@ II. PROGRAM STARTING
  2. Start the program:
     - Run main.py
     - Follow the GUI's instructions
- 3. ENJOY!!!
+III.  ENJOY!!!
+
 
 
