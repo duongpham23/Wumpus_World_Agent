@@ -12,8 +12,10 @@ II. PROGRAM STARTING
     - Type in: pip install -r requirements.txt
  2. Start the program:
     - Run main.py
-    - Follow the GUI's instructions\\
+    - Follow the GUI's instructions
+      
 III.  ENJOY!!!
+
 
 
 
