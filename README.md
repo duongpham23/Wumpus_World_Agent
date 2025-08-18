@@ -10,8 +10,9 @@ II. PROGRAM STARTING
  1. Install the required libraries:
     - Open command prompt at the Source folder
     - Type in: pip install -r requirements.txt
- 2. Start the program
+ 2. Start the program:
     - Run main.py
     - Follow the GUI's instructions
  3. ENJOY!!!
+
 
