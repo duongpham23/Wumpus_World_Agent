@@ -4,7 +4,7 @@ INSTRUCTION ON HOW TO START THE PROGRAM
 
 I. PYTHON AND PIP
  1. Python: Download the lastest python at https://www.python.org/downloads
- 2. Pip: Follow instructions and instal pip at https://pip.pypa.io/en/stable/installation
+ 2. Pip: Follow instructions and install pip at https://pip.pypa.io/en/stable/installation
 
 II. PROGRAM STARTING
  1. Install the required libraries:
@@ -15,6 +15,7 @@ II. PROGRAM STARTING
     - Follow the GUI's instructions
       
 III.  ENJOY!!!
+
 
 
 
