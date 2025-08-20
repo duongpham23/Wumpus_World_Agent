@@ -326,45 +326,40 @@ def update_KB_after_shot(agent: Agent.Agent, KB, N):
 # ===== ENHANCED: IN KB VÀ INFERENCE RESULTS =====
 def print_KB_with_inference(KB, x, y, percept, debug_info):
     # os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"🤖 Agent at ({x}, {y}) | Percepts: {percept}")
+    print(f"🤖 Agent at ({x}, {y})")
     # print("\n📚 Knowledge Base (simplified):")
     
-    # # Chỉ in các facts quan trọng
+    # Chỉ in các facts quan trọng
     # simple_facts = [clause for clause in KB if '<->' not in clause and 'OR' not in clause]
     # for clause in sorted(simple_facts):
     #     print("  ", clause)
-
-    print("📚 Knowledge Base:")
-    for clause in sorted(KB):
-        print("  ", clause)
-    print("-" * 60)
     
-    print("\n🧠 Inference Results:")
-    for row in range(N-1, -1, -1):
-        line = f"Row {row}: "
-        for col in range(N):
-            cell = world[row][col]
-            # if cell["visited"]:
-            #     line += "[V] "
-            if cell["safe"]:
-                line += "[S] "
-            elif cell["dangerous"]: 
-                line += "[D] "
-            else:  # uncertain
-                line += "[?] "
-        print(line)
+    # print("\n🧠 Inference Results:")
+    # for row in range(N-1, -1, -1):
+    #     line = f"Row {row}: "
+    #     for col in range(N):
+    #         cell = world[row][col]
+    #         if cell["visited"]:
+    #             line += "[V] "
+    #         if cell["safe"]:
+    #             line += "[S] "
+    #         elif cell["dangerous"]: 
+    #             line += "[D] "
+    #         else:  # uncertain
+    #             line += "[?] "
+    #     print(line)
     
-    print("\nLegend: [V]=Visited, [S]=Safe, [D]=Dangerous, [?]=Uncertain")
+    # print("\nLegend: [V]=Visited, [S]=Safe, [D]=Dangerous, [?]=Uncertain")
     
-    # In một vài inferences quan trọng
-    if debug_info:
-        print("\n🔍 Recent Inferences:")
-        count = 0
-        for (cx, cy), (status, inferences) in debug_info.items():
-            if inferences and count < 3:  # Chỉ in 3 inferences đầu
-                print(f"  Cell ({cx},{cy}): {status}")
-                for inf in inferences[:2]:  # Chỉ in 2 inferences đầu tiên
-                    print(f"    - {inf}")
-                count += 1
+    # # In một vài inferences quan trọng
+    # if debug_info:
+    #     print("\n🔍 Recent Inferences:")
+    #     count = 0
+    #     for (cx, cy), (status, inferences) in debug_info.items():
+    #         if inferences and count < 3:  # Chỉ in 3 inferences đầu
+    #             print(f"  Cell ({cx},{cy}): {status}")
+    #             for inf in inferences[:2]:  # Chỉ in 2 inferences đầu tiên
+    #                 print(f"    - {inf}")
+    #             count += 1
     
-    print("-" * 60)
+    # print("-" * 60)

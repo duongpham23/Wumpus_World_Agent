@@ -13,6 +13,9 @@ class Agent:
         self.gold_collected = False
 
     def move_forward(self):
+        if self.facing_to_wall():
+            return False
+
         new_x, new_y = self.pos
         if self.direction == 'N':
             new_y += 1
@@ -24,6 +27,8 @@ class Agent:
             new_x -= 1
         self.pos = (new_x, new_y)
         self.score -= 1
+        
+        return True
 
     def turn_left(self):
         if self.direction == 'N': # Bắc
@@ -53,14 +58,14 @@ class Agent:
             cell = world[y][x]
             if cell["glitter"]:
                 cell["glitter"] = False
-                self.score += 100
+                self.score += 10
                 self.gold_collected = True
     
-    def climb_out(self):
-        x, y = self.pos
-        if (x, y) == (0, 0):
-            if self.gold_collected:
-                self.score += 1000
+    # def climb_out(self):
+    #     x, y = self.pos
+    #     if (x, y) == (0, 0):
+    #         if self.gold_collected:
+    #             self.score += 1000
 
     def shoot_arrow(self):
         x, y = self.pos
@@ -98,6 +103,28 @@ class Agent:
                     wumpus_world.wumpus_update_stench()
                     return True
         print("❌ No Wumpus hit")
+        return False
+
+    def dead(self):
+        x, y = self.pos
+        if world[y][x]["wumpus"] or world[y][x]["pit"]:
+            self.score -= 1000
+            print("💀 Agent is dead!")
+            print("Score: ", self.score)
+            return True
+        return False
+    
+    # Trả true nếu trèo ra ngoài được
+    def climb_out(self):
+        x, y = self.pos
+        if (x, y) == (0, 0):
+            if self.gold_collected:
+                self.score += 1000
+                print("Climbing out of the dungeon with gold!")
+            else:
+                print("Climbing out of the dungeon!")
+            print("Score: ", self.score)
+            return True
         return False
 
     def facing_to_wall(self):

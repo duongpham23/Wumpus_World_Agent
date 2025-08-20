@@ -5,9 +5,8 @@ world = wumpus_world.world
 N = wumpus_world.N
 
 class State:
-    def __init__(self, agent: Agent.Agent, status="safe", cost=0, heuristic=0, parent=None):
+    def __init__(self, agent: Agent.Agent, cost=0, heuristic=0, parent=None):
         self.agent = agent
-        self.status = status      # trạng thái của ô (có thể là 'safe', 'dangerous', 'uncertain')
         self.cost = cost          # g(n) chi phí từ start đến state này
         self.heuristic = heuristic  # h(n) ước lượng chi phí đến goal
         self.parent = parent      # trạng thái cha để truy vết đường đi
@@ -22,9 +21,6 @@ class State:
         return hash((self.agent.pos, self.agent.direction))
 
     def __lt__(self, other):
-        priority = {'safe': 0, 'uncertain': 1}
-        if self.status != other.status:
-            return priority[self.status] < priority[other.status]
         return self.f() < other.f()
 
     def calc_heuristic(self, goal_pos):
@@ -60,25 +56,32 @@ class State:
             dy = dy // abs(dy)  # Chỉ lấy hướng
 
         direction_to_goal = direction_map[(dx, dy)]
-        # Nếu cần quay 90 độ
-        if (self.agent.direction == 'W' or self.agent.direction == 'E') and (direction_to_goal == 'N' or direction_to_goal == 'S'):
-            turn_cost = 1
-        elif (self.agent.direction == 'N' or self.agent.direction == 'S') and (direction_to_goal == 'E' or direction_to_goal == 'W'):
-            turn_cost = 1
-        elif self.agent.direction == 'N' and (direction_to_goal == 'SE' or direction_to_goal == 'SW'):
-            turn_cost = 1
-        elif self.agent.direction == 'S' and (direction_to_goal == 'NE' or direction_to_goal == 'NW'):
-            turn_cost = 1
-        elif self.agent.direction == 'E' and (direction_to_goal == 'SW' or direction_to_goal == 'NW'):
-            turn_cost = 1
-        elif self.agent.direction == 'W' and (direction_to_goal == 'SE' or direction_to_goal == 'NE'):
-            turn_cost = 1
-        # Nếu cần quay 180 độ
-        elif (self.agent.direction == 'N' and direction_to_goal == 'S') or (self.agent.direction == 'S' and direction_to_goal == 'N'):
+        # Nếu cần quay ít nhất 2 lần
+        if (self.agent.direction == 'N' and direction_to_goal == 'S') or (self.agent.direction == 'S' and direction_to_goal == 'N'):
             turn_cost = 2
         elif (self.agent.direction == 'E' and direction_to_goal == 'W') or (self.agent.direction == 'W' and direction_to_goal == 'E'):
             turn_cost = 2
-        # Nếu không cần quay
+        elif self.agent.direction == 'N' and (direction_to_goal == 'SE' or direction_to_goal == 'SW'):
+            turn_cost = 2
+        elif self.agent.direction == 'S' and (direction_to_goal == 'NE' or direction_to_goal == 'NW'):
+            turn_cost = 2
+        elif self.agent.direction == 'E' and (direction_to_goal == 'SW' or direction_to_goal == 'NW'):
+            turn_cost = 2
+        elif self.agent.direction == 'W' and (direction_to_goal == 'SE' or direction_to_goal == 'NE'):
+            turn_cost = 2
+        # Nếu cần quay ít nhất 1 lần
+        elif (self.agent.direction == 'W' or self.agent.direction == 'E') and (direction_to_goal == 'N' or direction_to_goal == 'S'):
+            turn_cost = 1
+        elif (self.agent.direction == 'N' or self.agent.direction == 'S') and (direction_to_goal == 'E' or direction_to_goal == 'W'):
+            turn_cost = 1
+        elif self.agent.direction == 'N' and (direction_to_goal == 'NE' or direction_to_goal == 'NW'):
+            turn_cost = 1
+        elif self.agent.direction == 'S' and (direction_to_goal == 'SW' or direction_to_goal == 'SE'):
+            turn_cost = 1
+        elif self.agent.direction == 'E' and (direction_to_goal == 'NE' or direction_to_goal == 'SE'):
+            turn_cost = 1
+        elif self.agent.direction == 'W' and (direction_to_goal == 'SW' or direction_to_goal == 'NW'):
+            turn_cost = 1
         else:
             turn_cost = 0
 
@@ -97,10 +100,10 @@ class State:
         if wumpus_world.in_bounds(new_x, new_y):
             cell = world[new_y][new_x]
             if cell["safe"]:
-                new_state = State(new_agent, "safe", self.cost + 1, 0, self)
+                new_state = State(new_agent, self.cost + 1, 0, self)
                 children.append(new_state)
             elif cell["uncertain"]:
-                new_state = State(new_agent, "uncertain", self.cost + 10, 0, self)
+                new_state = State(new_agent, self.cost + N * 4, 0, self)
                 children.append(new_state)
 
         # Quay trái
@@ -108,14 +111,14 @@ class State:
         new_agent.turn_left()
         # Kiểm tra xem có đập mặt vô tường không
         if not new_agent.facing_to_wall():
-            new_state = State(new_agent, "safe", self.cost + 1, 0, self)
+            new_state = State(new_agent, self.cost + 1, 0, self)
             children.append(new_state)
 
         # Quay phải
         new_agent = self.agent.clone()
         new_agent.turn_right()
         if not new_agent.facing_to_wall():
-            new_state = State(new_agent, "safe", self.cost + 1, 0, self)
+            new_state = State(new_agent, self.cost + 1, 0, self)
             children.append(new_state)
 
         return children

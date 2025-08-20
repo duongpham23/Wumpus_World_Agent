@@ -4,14 +4,20 @@ import wumpus_world
 world = wumpus_world.world
 
 NUM_WUMPUS = wumpus_world.NUM_WUMPUS
-NUM_PITS = wumpus_world.NUM_PITS
+PIT_PROB = wumpus_world.PIT_PROB
+ADVANCED_MODE = True if wumpus_world.MODE == "advanced" else False
+SMART_AGENT = True if wumpus_world.AGENT == "smart" else False
+RANDOM_MAP = True if wumpus_world.MAP == "random" else False
 
 # ===== Main =====
 if __name__ == "__main__":
     print("🎮 Initializing Wumpus World with Inference Engine...")
-    wumpus_world.place_feature("wumpus", NUM_WUMPUS)
-    wumpus_world.place_feature("pit", 8)
-    wumpus_world.place_feature("glitter", 1)
-    print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {NUM_PITS} Pits")
+    if RANDOM_MAP:
+        wumpus_world.place_feature("wumpus", count=NUM_WUMPUS)
+        wumpus_world.place_feature("pit", pit_prob=PIT_PROB)
+        wumpus_world.place_feature("glitter", count=1)
+    else:
+        wumpus_world.load_world_from_file(wumpus_world.MAP)
+    print(f"📍 Placed {NUM_WUMPUS} Wumpuses and {PIT_PROB} Pits appear in cell")
     print("🚀 Starting simulation...")
-    graphics.simulate_agent(world, True)
+    graphics.simulate_agent(world, ADVANCED_MODE, SMART_AGENT)
